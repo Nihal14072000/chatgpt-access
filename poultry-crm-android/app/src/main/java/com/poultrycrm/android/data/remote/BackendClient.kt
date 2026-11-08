@@ -9,7 +9,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 class BackendClient(val session: ApiSession = ApiSession()) {
     private val authInterceptor = Interceptor { chain ->
         val request = chain.request().newBuilder().apply {
-            session.header()?.let { header -> header("Authorization", header) }
+            session.header()?.let { authValue -> header("Authorization", authValue) }
         }.build()
         val response = chain.proceed(request)
         if (response.code == 401) session.clear()
