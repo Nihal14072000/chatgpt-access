@@ -13,7 +13,9 @@ android {
         versionCode = 1
         versionName = "0.1.0"
     }
-    buildFeatures { compose = true }
+    buildFeatures { compose = true; buildConfig = true }
+    val configuredApi = providers.gradleProperty("POULTRY_API_BASE_URL").orElse("http://10.0.2.2:8080/api/").get()
+    defaultConfig { buildConfigField("String", "API_BASE_URL", "\"$configuredApi\"") }
     kotlinOptions { jvmTarget = "17" }
 }
 dependencies {
@@ -24,5 +26,8 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.navigation:navigation-compose:2.8.5")
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
