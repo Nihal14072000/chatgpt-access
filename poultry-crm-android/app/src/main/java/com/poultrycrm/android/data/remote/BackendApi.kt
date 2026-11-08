@@ -97,4 +97,7 @@ interface TripsApi {
 
     @GET("order-types")
     suspend fun orderTypes(): Response<Any>
+
+    @POST("trips/insert")
+    suspend fun createTrip(@Body trip: Map<String, @JvmSuppressWildcards Any?>): Response<Map<String, Any?>>
 }
