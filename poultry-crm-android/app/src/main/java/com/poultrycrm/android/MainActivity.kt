@@ -25,6 +25,9 @@ import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -44,6 +47,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import com.poultrycrm.android.data.remote.BackendClient
+import com.poultrycrm.android.data.remote.BackendUser
+import com.poultrycrm.android.data.remote.SessionRepository
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -80,15 +91,99 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             MaterialTheme(colorScheme = lightColorScheme()) {
-                PoultryCrmApp()
+                val backend = remember { BackendClient() }
+                val sessionRepository = remember { SessionRepository(backend) }
+                var signedInUser by remember { mutableStateOf<BackendUser?>(null) }
+                if (signedInUser == null) {
+                    LoginScreen(sessionRepository) { signedInUser = it }
+                } else {
+                    PoultryCrmApp(
+                        user = signedInUser!!,
+                        onSignOut = {
+                            sessionRepository.signOut()
+                            signedInUser = null
+                        }
+                    )
+                }
             }
         }
     }
 }
 
+@Composable
+private fun LoginScreen(
+    sessionRepository: SessionRepository,
+    onAuthenticated: (BackendUser) -> Unit
+) {
+    var username by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var busy by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+
+    Column(
+        modifier = Modifier.fillMaxSize().padding(24.dp),
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text("Poultry CRM", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+        Text("Sign in using your existing web application account.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(24.dp))
+        OutlinedTextField(
+            value = username,
+            onValueChange = { username = it; error = null },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("Username") },
+            singleLine = true
+        )
+        Spacer(Modifier.height(12.dp))
+        OutlinedTextField(
+            value = password,
+            onValueChange = { password = it; error = null },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("Password") },
+            visualTransformation = PasswordVisualTransformation(),
+            singleLine = true
+        )
+        if (error != null) {
+            Spacer(Modifier.height(8.dp))
+            Text(error!!, color = MaterialTheme.colorScheme.error)
+        }
+        Spacer(Modifier.height(16.dp))
+        Button(
+            onClick = {
+                busy = true
+                error = null
+                scope.launch {
+                    try {
+                        val user = withContext(Dispatchers.IO) {
+                            sessionRepository.signIn(username.trim(), password)
+                        }
+                        password = ""
+                        onAuthenticated(user)
+                    } catch (failure: Exception) {
+                        error = failure.message ?: "Unable to sign in. Check the API address and credentials."
+                    } finally {
+                        busy = false
+                    }
+                }
+            },
+            enabled = !busy && username.isNotBlank() && password.isNotEmpty(),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            if (busy) CircularProgressIndicator() else Text("Sign in")
+        }
+        Spacer(Modifier.height(12.dp))
+        Text(
+            "Authentication uses the same /auth/me endpoint as the web app.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PoultryCrmApp() {
+private fun PoultryCrmApp(user: BackendUser, onSignOut: () -> Unit) {
     val navController = rememberNavController()
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route ?: "dashboard"
@@ -98,6 +193,7 @@ private fun PoultryCrmApp() {
         topBar = {
             TopAppBar(
                 title = { Text(selectedModule?.name ?: "Poultry CRM", fontWeight = FontWeight.SemiBold) },
+                actions = { TextButton(onClick = onSignOut) { Text("Sign out") } },
                 navigationIcon = {
                     if (selectedModule != null) {
                         IconButton(onClick = { navController.popBackStack() }) {
