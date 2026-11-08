@@ -23,30 +23,80 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="20dp"
+        android:paddingTop="24dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="18dp"
+        android:background="#66000000">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="GHOSTCAM"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.12" />
+
+        <TextView
+            android:id="@+id/flipButton"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/camera_control"
+            android:gravity="center"
+            android:text="↻"
+            android:textColor="#FFFFFF"
+            android:textSize="24sp"
+            android:contentDescription="Switch front and rear camera" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/lensOptions"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal|bottom"
+        android:layout_marginBottom="222dp"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:padding="8dp"
+        android:background="#99000000" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:background="#CC101010"
         android:orientation="vertical"
-        android:padding="14dp">
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:paddingTop="14dp"
+        android:paddingBottom="28dp"
+        android:background="#E6101010">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:paddingBottom="10dp">
 
             <TextView
                 android:id="@+id/opacityLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Opacity: 50%"
+                android:text="Overlay  50%"
                 android:textColor="#FFFFFF"
-                android:textSize="14sp" />
+                android:textSize="13sp" />
 
             <SeekBar
                 android:id="@+id/opacitySeekBar"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:layout_marginStart="12dp"
                 android:max="100"
                 android:progress="50" />
         </LinearLayout>
@@ -57,27 +107,33 @@
             android:gravity="center"
             android:orientation="horizontal">
 
-            <Button
+            <TextView
                 android:id="@+id/imageButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Image" />
+                android:layout_width="64dp"
+                android:layout_height="52dp"
+                android:gravity="center"
+                android:text="Gallery"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:contentDescription="Choose reference image" />
 
-            <Button
+            <TextView
                 android:id="@+id/captureButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="8dp"
-                android:layout_weight="1"
-                android:text="Capture" />
+                android:layout_width="76dp"
+                android:layout_height="76dp"
+                android:layout_marginHorizontal="28dp"
+                android:background="@drawable/shutter_button"
+                android:gravity="center"
+                android:text=" "
+                android:contentDescription="Take photo" />
 
-            <Button
-                android:id="@+id/flipButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Flip" />
+            <TextView
+                android:layout_width="64dp"
+                android:layout_height="52dp"
+                android:gravity="center"
+                android:text="PHOTO"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp" />
         </LinearLayout>
     </LinearLayout>
 </FrameLayout>
