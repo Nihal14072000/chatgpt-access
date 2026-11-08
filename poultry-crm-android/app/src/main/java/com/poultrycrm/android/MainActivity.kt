@@ -99,6 +99,7 @@ class MainActivity : ComponentActivity() {
                 } else {
                     PoultryCrmApp(
                         user = signedInUser!!,
+                        tripsApi = backend.trips,
                         onSignOut = {
                             sessionRepository.signOut()
                             signedInUser = null
@@ -183,7 +184,7 @@ private fun LoginScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PoultryCrmApp(user: BackendUser, onSignOut: () -> Unit) {
+private fun PoultryCrmApp(user: BackendUser, tripsApi: com.poultrycrm.android.data.remote.TripsApi, onSignOut: () -> Unit) {
     val navController = rememberNavController()
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route ?: "dashboard"
@@ -228,7 +229,7 @@ private fun PoultryCrmApp(user: BackendUser, onSignOut: () -> Unit) {
                 ModuleDirectory(onOpenModule = { navController.navigate(it) })
             }
             modules.forEach { module ->
-                composable(module.route) { if (module.route == "logistics") PeopleLogisticsScreen(backend.trips) else ModuleScreen(module) }
+                composable(module.route) { if (module.route == "logistics") PeopleLogisticsScreen(tripsApi) else ModuleScreen(module) }
             }
         }
     }
