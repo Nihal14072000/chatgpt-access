@@ -228,7 +228,7 @@ private fun PoultryCrmApp(user: BackendUser, onSignOut: () -> Unit) {
                 ModuleDirectory(onOpenModule = { navController.navigate(it) })
             }
             modules.forEach { module ->
-                composable(module.route) { ModuleScreen(module) }
+                composable(module.route) { if (module.route == "logistics") PeopleLogisticsScreen(backend.trips) else ModuleScreen(module) }
             }
         }
     }
