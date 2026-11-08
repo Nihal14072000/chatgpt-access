@@ -153,8 +153,8 @@ class MainActivity : AppCompatActivity() {
                 textSize = 14f
                 gravity = Gravity.CENTER
                 setPadding(18, 10, 18, 10)
-                setTextColor(getColor(android.R.color.white))
                 isSelected = lens.cameraId == (selectedLensId ?: rearLenses.firstOrNull()?.cameraId)
+                setTextColor(getColor(if (isSelected) android.R.color.black else android.R.color.white))
                 setBackgroundResource(if (isSelected) R.drawable.lens_chip_selected else R.drawable.lens_chip)
                 setOnClickListener {
                     selectedLensId = lens.cameraId
