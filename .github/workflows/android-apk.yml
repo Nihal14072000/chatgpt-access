@@ -1,0 +1,49 @@
+name: Build Poultry CRM Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/poultry-crm-android
+    paths:
+      - "poultry-crm-android/**"
+      - ".github/workflows/android-apk.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build debug APK
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: poultry-crm-android
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Build debug APK
+        run: gradle --no-daemon assembleDebug
+        env:
+          POULTRY_API_BASE_URL: http://129.225.90.181:1111/api/
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: poultry-crm-android-debug
+          path: poultry-crm-android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
