@@ -3,17 +3,23 @@ package com.example.ghostcam
 import android.Manifest
 import android.content.ContentValues
 import android.content.pm.PackageManager
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraManager
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
+import android.view.Gravity
 import android.widget.Button
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.camera.camera2.interop.Camera2CameraInfo
+import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -21,6 +27,8 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
+import java.util.Locale
+import kotlin.math.abs
 
 class MainActivity : AppCompatActivity() {
 
@@ -28,9 +36,16 @@ class MainActivity : AppCompatActivity() {
     private lateinit var ghostOverlay: ImageView
     private lateinit var opacitySeekBar: SeekBar
     private lateinit var opacityLabel: TextView
+    private lateinit var lensOptionsContainer: LinearLayout
+    private lateinit var flipButton: TextView
 
     private var imageCapture: ImageCapture? = null
-    private var cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+    private var activeCamera: Camera? = null
+    private var isFrontCamera = false
+    private var selectedLensId: String? = null
+    private var rearLenses: List<LensOption> = emptyList()
+
+    private data class LensOption(val cameraId: String, val label: String, val focalLength: Float)
 
     private val requestCameraPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -54,19 +69,23 @@ class MainActivity : AppCompatActivity() {
         ghostOverlay = findViewById(R.id.ghostOverlay)
         opacitySeekBar = findViewById(R.id.opacitySeekBar)
         opacityLabel = findViewById(R.id.opacityLabel)
+        lensOptionsContainer = findViewById(R.id.lensOptions)
+        flipButton = findViewById(R.id.flipButton)
 
         previewView.scaleType = PreviewView.ScaleType.FILL_CENTER
+        rearLenses = discoverRearLenses()
+        renderLensOptions()
 
         opacitySeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 ghostOverlay.alpha = progress / 100f
-                opacityLabel.text = "Opacity: $progress%"
+                opacityLabel.text = "Overlay  $progress%"
             }
             override fun onStartTrackingTouch(seekBar: SeekBar?) = Unit
             override fun onStopTrackingTouch(seekBar: SeekBar?) = Unit
         })
 
-        findViewById<Button>(R.id.imageButton).setOnClickListener {
+        findViewById<TextView>(R.id.imageButton).setOnClickListener {
             pickReferenceImage.launch(
                 PickVisualMediaRequest.Builder()
                     .setMediaType(ActivityResultContracts.PickVisualMedia.ImageOnly)
@@ -74,13 +93,11 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-        findViewById<Button>(R.id.captureButton).setOnClickListener { capturePhoto() }
-        findViewById<Button>(R.id.flipButton).setOnClickListener {
-            cameraSelector = if (cameraSelector == CameraSelector.DEFAULT_BACK_CAMERA) {
-                CameraSelector.DEFAULT_FRONT_CAMERA
-            } else {
-                CameraSelector.DEFAULT_BACK_CAMERA
-            }
+        findViewById<TextView>(R.id.captureButton).setOnClickListener { capturePhoto() }
+        flipButton.setOnClickListener {
+            isFrontCamera = !isFrontCamera
+            selectedLensId = null
+            renderLensOptions()
             startCamera()
         }
 
@@ -90,6 +107,66 @@ class MainActivity : AppCompatActivity() {
             startCamera()
         } else {
             requestCameraPermission.launch(Manifest.permission.CAMERA)
+        }
+    }
+
+    private fun discoverRearLenses(): List<LensOption> {
+        return try {
+            val manager = getSystemService(CAMERA_SERVICE) as CameraManager
+            val cameras = manager.cameraIdList.mapNotNull { id ->
+                val characteristics = manager.getCameraCharacteristics(id)
+                if (characteristics.get(CameraCharacteristics.LENS_FACING) !=
+                    CameraCharacteristics.LENS_FACING_BACK) return@mapNotNull null
+                val focal = characteristics.get(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS)
+                    ?: return@mapNotNull null
+                val value = focal.minOrNull() ?: return@mapNotNull null
+                LensOption(id, "", value)
+            }.distinctBy { it.cameraId }
+
+            if (cameras.isEmpty()) return emptyList()
+            val sorted = cameras.sortedBy { it.focalLength }
+            val base = sorted[sorted.size / 2].focalLength
+            sorted.map { lens ->
+                val ratio = lens.focalLength / base
+                val label = when {
+                    ratio < 0.8f -> "0.5×"
+                    ratio > 1.6f -> String.format(Locale.US, "%.1f×", ratio)
+                    else -> "1×"
+                }
+                lens.copy(label = label)
+            }.distinctBy { it.label }
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    private fun renderLensOptions() {
+        lensOptionsContainer.removeAllViews()
+        if (isFrontCamera) {
+            lensOptionsContainer.visibility = android.view.View.GONE
+            return
+        }
+        lensOptionsContainer.visibility = android.view.View.VISIBLE
+        rearLenses.forEachIndexed { index, lens ->
+            val chip = TextView(this).apply {
+                text = lens.label
+                textSize = 14f
+                gravity = Gravity.CENTER
+                setPadding(18, 10, 18, 10)
+                setTextColor(getColor(android.R.color.white))
+                isSelected = lens.cameraId == (selectedLensId ?: rearLenses.firstOrNull()?.cameraId)
+                setBackgroundResource(if (isSelected) R.drawable.lens_chip_selected else R.drawable.lens_chip)
+                setOnClickListener {
+                    selectedLensId = lens.cameraId
+                    renderLensOptions()
+                    startCamera()
+                }
+            }
+            val params = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { marginEnd = 8 }
+            lensOptionsContainer.addView(chip, params)
         }
     }
 
@@ -105,13 +182,31 @@ class MainActivity : AppCompatActivity() {
                     .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
                     .build()
 
+                val selector = if (isFrontCamera) {
+                    CameraSelector.DEFAULT_FRONT_CAMERA
+                } else {
+                    val lens = rearLenses.firstOrNull { it.cameraId == selectedLensId }
+                        ?: rearLenses.firstOrNull()
+                    if (lens == null) {
+                        CameraSelector.DEFAULT_BACK_CAMERA
+                    } else {
+                        CameraSelector.Builder().addCameraFilter { infos ->
+                            infos.filter { Camera2CameraInfo.from(it).cameraId == lens.cameraId }
+                        }.build()
+                    }
+                }
+
                 cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(this, cameraSelector, preview, capture)
+                activeCamera = cameraProvider.bindToLifecycle(this, selector, preview, capture)
                 imageCapture = capture
+                if (!isFrontCamera && selectedLensId == null) {
+                    selectedLensId = rearLenses.firstOrNull()?.cameraId
+                    renderLensOptions()
+                }
             } catch (exception: Exception) {
                 Toast.makeText(
                     this,
-                    "Unable to start camera: ${exception.localizedMessage}",
+                    "Unable to start selected camera lens: ${exception.localizedMessage}",
                     Toast.LENGTH_LONG
                 ).show()
             }
