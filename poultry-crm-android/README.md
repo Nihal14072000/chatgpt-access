@@ -20,7 +20,7 @@ The Android client is being aligned with the API contracts found in the web app'
 - Finance endpoints used by the web app: `/payments/retrieve`, `/payments/{id}/retrieve`, `/payments`, `/finance/settlements`, `/finance/receivables`, `/finance/payables`, and `/finance/allocations`
 - Trip support endpoints used by the web app: `/trips`, `/vehicles`, `/drivers`, `/supervisors`, `/buying-parties`, `/selling-parties`, and `/order-types`
 
-The Android data layer now contains Retrofit contracts, a shared OkHttp client, Basic-auth session handling, and an HTTP 401 session-clear interceptor.
+The Android data layer now contains Retrofit contracts for generic CRUD, finance and trip endpoints, a shared OkHttp client, Basic-auth sign-in through `/auth/me`, an in-memory session, and an HTTP 401 session-clear interceptor. The Compose login screen calls the existing authentication endpoint; passwords are not persisted.
 
 **Important backend finding:** the web app's generic `BusinessDataService` is currently wired to `JsonFileAdapter` in `app.config.ts`, which serves local mock fixtures. Its `ApiDataAdapter` exists in source but is not the adapter selected by the current app configuration. Dedicated services such as finance and trips do call REST endpoints. The Android app is being built to use the real REST contracts rather than treating mock JSON fixtures as server APIs.
 
@@ -48,7 +48,7 @@ Open this directory as a project. Use JDK 17 and Android SDK 35.
 
 The first UI milestone includes project setup, a dashboard, module navigation, a searchable module directory and representative sample records. The shared backend networking layer is now scaffolded against the web app's observed endpoint contracts.
 
-The login and business screens still need to be wired end-to-end to the live backend and tested against a reachable backend environment. Backend host, actual API availability, response schemas, and any server-side differences must be confirmed before production use.
+Login is wired to the shared authentication endpoint. The business module screens are still sample-data UI and need to be connected module-by-module to the corresponding live API endpoints. The backend host, API availability, response schemas, and any server-side differences must be confirmed before production use. Backend host, actual API availability, response schemas, and any server-side differences must be confirmed before production use.
 
 ## Planned feature parity
 
