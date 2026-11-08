@@ -55,3 +55,7 @@ Login is wired to the shared authentication endpoint. The business module screen
 - Logistics: employees, vehicles, assignments, trips and deliveries
 - Finance: receivables, payables, payments, receipts, expenses and profitability
 - Reports, analytics, notifications, organization, users and role permissions
+
+## Automated APK build
+
+GitHub Actions builds a debug APK on pushes to `feature/poultry-crm-android`. The APK is uploaded as the `poultry-crm-android-debug` workflow artifact.
