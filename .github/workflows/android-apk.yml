@@ -36,9 +36,7 @@ jobs:
           gradle-version: "8.9"
 
       - name: Build debug APK
-        run: gradle --no-daemon assembleDebug
-        env:
-          POULTRY_API_BASE_URL: http://129.225.90.181:1111/api/
+        run: gradle --no-daemon -PPOULTRY_API_BASE_URL=http://129.225.90.181:1111/api/ assembleDebug
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
