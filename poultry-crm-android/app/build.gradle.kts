@@ -5,7 +5,7 @@ plugins {
 }
 
 val poultryApiBaseUrl = providers.gradleProperty("POULTRY_API_BASE_URL")
-    .orElse("http://10.0.2.2:8080/api/")
+    .orElse("http://129.225.90.181:1111/api/")
     .get()
 
 android {
