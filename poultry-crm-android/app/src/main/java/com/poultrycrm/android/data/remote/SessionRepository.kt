@@ -14,6 +14,16 @@ class SessionRepository(private val backend: BackendClient) {
         return user
     }
 
+    suspend fun restoreSession(): BackendUser? {
+        val authorization = backend.session.header() ?: return null
+        return try {
+            backend.auth.currentUser(authorization)
+        } catch (failure: Exception) {
+            backend.session.clear()
+            null
+        }
+    }
+
     fun signOut() {
         backend.session.clear()
     }
