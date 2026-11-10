@@ -40,6 +40,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -91,10 +92,19 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             MaterialTheme(colorScheme = lightColorScheme()) {
-                val backend = remember { BackendClient() }
+                val backend = remember { BackendClient(this@MainActivity) }
                 val sessionRepository = remember { SessionRepository(backend) }
                 var signedInUser by remember { mutableStateOf<BackendUser?>(null) }
-                if (signedInUser == null) {
+                var sessionChecked by remember { mutableStateOf(false) }
+                LaunchedEffect(sessionRepository) {
+                    signedInUser = withContext(Dispatchers.IO) { sessionRepository.restoreSession() }
+                    sessionChecked = true
+                }
+                if (!sessionChecked) {
+                    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
+                        CircularProgressIndicator()
+                    }
+                } else if (signedInUser == null) {
                     LoginScreen(sessionRepository) { signedInUser = it }
                 } else {
                     PoultryCrmApp(
