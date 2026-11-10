@@ -1,12 +1,13 @@
 package com.poultrycrm.android.data.remote
 
+import android.content.Context
 import com.poultrycrm.android.BuildConfig
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
-class BackendClient(val session: ApiSession = ApiSession()) {
+class BackendClient(context: Context, val session: ApiSession = ApiSession(context)) {
     private val authInterceptor = Interceptor { chain ->
         val request = chain.request().newBuilder().apply {
             session.header()?.let { authValue -> header("Authorization", authValue) }
